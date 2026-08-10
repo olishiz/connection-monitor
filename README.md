@@ -6,8 +6,12 @@ Native **macOS menu bar** app for continuous live connection monitoring — like
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![GitHub Package](https://img.shields.io/badge/package-%40olishiz%2Fconnection--monitor-blue)](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor)
 
 Minimal Apple-style UI · live RTT · stats · latency chart · recent replies.
+
+**Package listing:** [`@olishiz/connection-monitor`](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor) on [Packages](https://github.com/olishiz?tab=packages)  
+(Native Mac app — install with Homebrew or the DMG below, not `npm install`.)
 
 ## Install
 
@@ -80,7 +84,7 @@ connection-monitor/
 
 - Sandbox is off so the app can run system `ping` (personal utility).
 - For distribution beyond your Mac, sign & notarize with an Apple Developer ID.
-- This is a **native app**, distributed via **Releases** and **Homebrew** — not npm.
+- Real install path: **Homebrew** or **Releases (DMG)**. The GitHub Package is a profile listing only.
 
 ## License
 

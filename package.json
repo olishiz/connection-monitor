@@ -1,0 +1,33 @@
+{
+  "name": "@olishiz/connection-monitor",
+  "version": "1.0.1",
+  "description": "Native macOS menu bar live connection monitor (ICMP ping). Install via Homebrew or Releases — this package is the GitHub Packages listing.",
+  "keywords": [
+    "macos",
+    "menu-bar",
+    "ping",
+    "network",
+    "latency",
+    "connection-monitor",
+    "swiftui"
+  ],
+  "author": "olishiz",
+  "license": "MIT",
+  "homepage": "https://github.com/olishiz/connection-monitor#readme",
+  "bugs": {
+    "url": "https://github.com/olishiz/connection-monitor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olishiz/connection-monitor.git"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package/README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  }
+}
