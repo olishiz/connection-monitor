@@ -1,0 +1,108 @@
+import Foundation
+import SwiftUI
+
+/// One successful or failed ping sample.
+struct PingSample: Identifiable, Equatable {
+    let id = UUID()
+    let sequence: Int
+    let host: String
+    let resolvedIP: String?
+    let latencyMs: Double?
+    let ttl: Int?
+    let timestamp: Date
+    let isSuccess: Bool
+    let errorMessage: String?
+
+    var displayLine: String {
+        if isSuccess, let latencyMs, let resolvedIP {
+            let ttlPart = ttl.map { " ttl=\($0)" } ?? ""
+            return String(
+                format: "64 bytes from %@: icmp_seq=%d%@ time=%.3f ms",
+                resolvedIP,
+                sequence,
+                ttlPart,
+                latencyMs
+            )
+        }
+        return errorMessage ?? "Request timeout for icmp_seq=\(sequence)"
+    }
+}
+
+enum ConnectionStatus: Equatable {
+    case idle
+    case connecting
+    case online(latencyMs: Double)
+    case degraded(latencyMs: Double)
+    case offline
+    case error(String)
+
+    var color: Color {
+        switch self {
+        case .idle: return .secondary
+        case .connecting: return .blue
+        case .online: return .green
+        case .degraded: return .orange
+        case .offline, .error: return .red
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .idle: return "network"
+        case .connecting: return "arrow.triangle.2.circlepath"
+        case .online: return "wifi"
+        case .degraded: return "wifi.exclamationmark"
+        case .offline: return "wifi.slash"
+        case .error: return "exclamationmark.triangle"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .idle: return "Idle"
+        case .connecting: return "…"
+        case .online(let ms): return String(format: "%.0fms", ms)
+        case .degraded(let ms): return String(format: "%.0fms", ms)
+        case .offline: return "Down"
+        case .error: return "Err"
+        }
+    }
+
+    /// Green under 50ms, orange under 150ms, red otherwise / offline.
+    static func from(latencyMs: Double?) -> ConnectionStatus {
+        guard let latencyMs else { return .offline }
+        if latencyMs < 50 { return .online(latencyMs: latencyMs) }
+        if latencyMs < 150 { return .degraded(latencyMs: latencyMs) }
+        return .degraded(latencyMs: latencyMs)
+    }
+}
+
+struct PingStats: Equatable {
+    var sent: Int = 0
+    var received: Int = 0
+    var minMs: Double?
+    var maxMs: Double?
+    var totalMs: Double = 0
+
+    var lossPercent: Double {
+        guard sent > 0 else { return 0 }
+        return Double(sent - received) / Double(sent) * 100
+    }
+
+    var averageMs: Double? {
+        guard received > 0 else { return nil }
+        return totalMs / Double(received)
+    }
+
+    mutating func recordSuccess(_ ms: Double) {
+        sent += 1
+        received += 1
+        totalMs += ms
+        minMs = min(minMs ?? ms, ms)
+        maxMs = max(maxMs ?? ms, ms)
+    }
+
+    mutating func recordFailure() {
+        sent += 1
+    }
+}
