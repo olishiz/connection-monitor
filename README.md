@@ -15,6 +15,7 @@ Minimal Apple-style UI · live RTT · stats · latency chart · recent replies.
 
 ```bash
 brew tap olishiz/tap
+brew trust olishiz/tap          # required by modern Homebrew for third-party taps
 brew install --cask connection-monitor
 ```
 
