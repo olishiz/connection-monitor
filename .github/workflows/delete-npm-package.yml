@@ -1,0 +1,79 @@
+name: Delete npm package (one-shot)
+
+# Removes the mistaken @olishiz/connection-monitor npm package from GitHub Packages.
+# Safe to delete this workflow after a successful run.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete package versions then package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          OWNER="olishiz"
+          PKG="connection-monitor"
+
+          echo "Listing versions..."
+          VERSIONS=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/${OWNER}/packages/npm/${PKG}/versions" || true)
+          echo "$VERSIONS" | head -c 500
+          echo
+
+          # Delete each version id if JSON array
+          echo "$VERSIONS" | python3 -c '
+import json,sys,os,urllib.request
+raw=sys.stdin.read().strip()
+if not raw or raw.startswith("{"):
+  print("No versions list or error payload; will try package delete")
+  sys.exit(0)
+try:
+  data=json.loads(raw)
+except Exception as e:
+  print(e); sys.exit(0)
+token=os.environ["GH_TOKEN"]
+for v in data:
+  vid=v.get("id")
+  name=v.get("name")
+  print(f"Deleting version {name} id={vid}")
+  req=urllib.request.Request(
+    f"https://api.github.com/users/olishiz/packages/npm/connection-monitor/versions/{vid}",
+    method="DELETE",
+    headers={
+      "Authorization": f"Bearer {token}",
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  )
+  try:
+    with urllib.request.urlopen(req) as r:
+      print("  status", r.status)
+  except Exception as e:
+    print("  failed:", e)
+' || true
+
+          echo "Deleting package..."
+          CODE=$(curl -sS -o /tmp/del_pkg_body -w "%{http_code}" -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/users/${OWNER}/packages/npm/${PKG}")
+          echo "HTTP $CODE"
+          cat /tmp/del_pkg_body || true
+          # 204 = success, 404 = already gone
+          if [ "$CODE" = "204" ] || [ "$CODE" = "404" ]; then
+            echo "Package removed (or already gone)."
+            exit 0
+          fi
+          echo "Could not delete with GITHUB_TOKEN (often needs a PAT with delete:packages)."
+          echo "Delete manually: https://github.com/users/olishiz/packages/npm/connection-monitor/settings"
+          exit 0

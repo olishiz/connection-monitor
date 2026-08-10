@@ -15,6 +15,7 @@ xcuserdata/
 
 # Local release artifacts
 ConnectionMonitor-*.macos.zip
-
-# Local release artifacts
-ConnectionMonitor-*.macos.zip
+ConnectionMonitor-*.dmg
+dist/
+package-lock.json
+.npmrc

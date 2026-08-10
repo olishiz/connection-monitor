@@ -1,104 +1,85 @@
 # Connection Monitor
 
-**Native macOS menu bar app** for continuous live connection monitoring — like running `ping google.com` in Terminal, but always visible in your menu bar.
+Native **macOS menu bar** app for continuous live connection monitoring — like `ping google.com` in Terminal, always in your menu bar.
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
-[![GitHub Package](https://img.shields.io/badge/package-%40olishiz%2Fconnection--monitor-blue)](https://github.com/olishiz?tab=packages&repo_name=connection-monitor)
 
-> **Package:** [`@olishiz/connection-monitor`](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor) on [GitHub Packages](https://github.com/olishiz?tab=packages)  
-> Native SwiftUI app (not a Node dependency). Use this repo / releases to build and run.
+Minimal Apple-style UI · live RTT · stats · latency chart · recent replies.
 
-## Features
+## Install
 
-| Element | Behavior |
-|--------|----------|
-| **Menu bar** | Always-on status: green / orange / red + current RTT (e.g. `8ms`) |
-| **Popover** | Host + resolved IP, Current / Avg / Min / Max / Loss, latency chart, live ping log |
-| **Ping engine** | Runs `/sbin/ping` continuously (real ICMP, same as Terminal) |
-| **Host** | Change anytime (e.g. `1.1.1.1`, `cloudflare.com`) and hit Apply |
+### Homebrew (recommended)
 
-### Status thresholds
+```bash
+brew tap olishiz/tap
+brew install --cask connection-monitor
+```
 
-- **Online (green):** RTT &lt; 50 ms  
-- **Degraded (orange):** RTT ≥ 50 ms  
-- **Offline (red):** timeout / unreachable  
+### Download
 
-## Requirements
+Grab the latest **`.dmg`** from [Releases](https://github.com/olishiz/connection-monitor/releases):
 
-- macOS 14 or later  
-- Xcode 16+ (to build from source)
+1. Open `ConnectionMonitor-x.y.z.dmg`
+2. Drag **Connection Monitor** → **Applications**
+3. Open the app (first launch may need **right-click → Open** if unsigned)
+4. Check the menu bar for the status dot + latency
 
-## Quick start
-
-### Open in Xcode
+### Build from source
 
 ```bash
 git clone https://github.com/olishiz/connection-monitor.git
 cd connection-monitor
 open ConnectionMonitor.xcodeproj
+# Press ⌘R
 ```
 
-Then press **⌘R** to run. Look at the **menu bar** (top-right) for the wifi + latency label. Click it for the live panel.
-
-### Build from CLI
+CLI:
 
 ```bash
-xcodebuild -scheme ConnectionMonitor -configuration Debug \
+xcodebuild -scheme ConnectionMonitor -configuration Release \
   -derivedDataPath build \
   CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
 
-open build/Build/Products/Debug/ConnectionMonitor.app
+open build/Build/Products/Release/ConnectionMonitor.app
 ```
+
+## Features
+
+| | |
+|--|--|
+| **Menu bar** | Soft status dot + live RTT (e.g. `7 ms`) |
+| **Popover** | Large latency, avg/min/max/loss, thin chart, recent list |
+| **Engine** | Continuous `/sbin/ping` (real ICMP) |
+| **Host** | Change anytime (`google.com`, `1.1.1.1`, …) |
+
+Status colors: **green** &lt; 50 ms · **orange** ≥ 50 ms · **red** offline.
 
 ## How it works
 
 ```
-┌─────────────────┐     stdout stream      ┌──────────────────┐
-│  /sbin/ping -i 1│ ───────────────────► │  PingEngine      │
-│  google.com     │   parse icmp_seq,     │  (Observable)    │
-└─────────────────┘   time=ms, ttl        └────────┬─────────┘
-                                                   │
-                    ┌──────────────────────────────┼──────────────┐
-                    ▼                              ▼              ▼
-             Menu bar label                  Live log        Stats/chart
-             (8ms / Down)                 (terminal style)   (min/avg/max)
+/sbin/ping -i 1  ──►  PingEngine  ──►  menu bar + popover UI
 ```
 
-The app is an **LSUIElement** agent: no Dock icon, only the menu bar. Quit from the popover (**Quit**) or press **⌘Q** while the popover is focused.
-
-Default target: **`google.com`**.
+`LSUIElement` agent: no Dock icon. Quit from the popover or **⌘Q**.
 
 ## Project layout
 
 ```
 connection-monitor/
 ├── ConnectionMonitor.xcodeproj
-├── ConnectionMonitor/
-│   ├── ConnectionMonitorApp.swift   # MenuBarExtra entry
-│   ├── PingEngine.swift             # Continuous ping + parse
-│   ├── PingModels.swift             # Sample, stats, status
-│   ├── MenuBarView.swift            # Label + popover UI
-│   ├── Info.plist                   # LSUIElement (menu-bar only)
-│   └── ConnectionMonitor.entitlements
+├── ConnectionMonitor/          # SwiftUI sources
 ├── LICENSE
 └── README.md
 ```
 
 ## Notes
 
-- App sandbox is **off** so the app can invoke system `ping` (real ICMP RTT). Intended as a personal / developer utility.
-- First launch may prompt for network-related permissions depending on macOS version; allow them.
-- If you have an Apple Developer team, set **Signing & Capabilities → Team** in Xcode for a smoother experience.
-
-## Roadmap ideas
-
-- [ ] Launch at login  
-- [ ] Notifications when connection drops  
-- [ ] Multiple hosts at once  
-- [ ] Optional floating desktop widget  
+- Sandbox is off so the app can run system `ping` (personal utility).
+- For distribution beyond your Mac, sign & notarize with an Apple Developer ID.
+- This is a **native app**, distributed via **Releases** and **Homebrew** — not npm.
 
 ## License
 
