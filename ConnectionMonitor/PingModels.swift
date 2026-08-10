@@ -38,11 +38,17 @@ enum ConnectionStatus: Equatable {
 
     var color: Color {
         switch self {
-        case .idle: return .secondary
-        case .connecting: return .blue
-        case .online: return .green
-        case .degraded: return .orange
-        case .offline, .error: return .red
+        case .idle:
+            return Color(nsColor: .secondaryLabelColor)
+        case .connecting:
+            return Color(nsColor: .systemBlue)
+        case .online:
+            // Soft system green (Control Center–like)
+            return Color(nsColor: .systemGreen)
+        case .degraded:
+            return Color(nsColor: .systemOrange)
+        case .offline, .error:
+            return Color(nsColor: .systemRed)
         }
     }
 
@@ -59,10 +65,12 @@ enum ConnectionStatus: Equatable {
 
     var shortLabel: String {
         switch self {
-        case .idle: return "Idle"
+        case .idle: return "—"
         case .connecting: return "…"
-        case .online(let ms): return String(format: "%.0fms", ms)
-        case .degraded(let ms): return String(format: "%.0fms", ms)
+        case .online(let ms):
+            return ms < 10 ? String(format: "%.1f ms", ms) : String(format: "%.0f ms", ms)
+        case .degraded(let ms):
+            return ms < 10 ? String(format: "%.1f ms", ms) : String(format: "%.0f ms", ms)
         case .offline: return "Down"
         case .error: return "Err"
         }

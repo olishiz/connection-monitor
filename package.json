@@ -1,0 +1,37 @@
+{
+  "name": "@olishiz/connection-monitor",
+  "version": "1.0.0",
+  "description": "Native macOS menu bar app for continuous live connection monitoring (ICMP ping). Open source SwiftUI utility — not a Node runtime dependency.",
+  "keywords": [
+    "macos",
+    "menu-bar",
+    "ping",
+    "network",
+    "latency",
+    "connection-monitor",
+    "swiftui",
+    "icmp"
+  ],
+  "author": "olishiz",
+  "license": "MIT",
+  "homepage": "https://github.com/olishiz/connection-monitor#readme",
+  "bugs": {
+    "url": "https://github.com/olishiz/connection-monitor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olishiz/connection-monitor.git"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package/install-notes.md"
+  ],
+  "scripts": {
+    "prepublishOnly": "node -e \"console.log('Publishing @olishiz/connection-monitor to GitHub Packages')\""
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  }
+}

@@ -13,21 +13,19 @@ struct ConnectionMonitorApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        // Hidden settings scene so the app can stay alive as a menu-bar agent.
         Settings {
-            Form {
-                Section("About") {
-                    Text("Connection Monitor")
-                        .font(.headline)
-                    Text("Live ICMP ping status in your menu bar.")
-                        .foregroundStyle(.secondary)
-                    Text("Default target: google.com")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Connection Monitor")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                Text("Live latency in your menu bar.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(.secondary)
+                Text("Default host · google.com")
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(.tertiary)
             }
-            .frame(width: 320, height: 160)
-            .padding()
+            .frame(width: 280, alignment: .leading)
+            .padding(20)
         }
     }
 

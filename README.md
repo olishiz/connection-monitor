@@ -6,6 +6,10 @@
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![GitHub Package](https://img.shields.io/badge/package-%40olishiz%2Fconnection--monitor-blue)](https://github.com/olishiz?tab=packages&repo_name=connection-monitor)
+
+> **Package:** [`@olishiz/connection-monitor`](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor) on [GitHub Packages](https://github.com/olishiz?tab=packages)  
+> Native SwiftUI app (not a Node dependency). Use this repo / releases to build and run.
 
 ## Features
 

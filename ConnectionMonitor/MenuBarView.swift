@@ -1,20 +1,25 @@
 import SwiftUI
 import Charts
 
+// MARK: - Menu bar
+
 struct MenuBarLabelView: View {
     @ObservedObject var engine: PingEngine
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: engine.statusIcon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(engine.status.color)
+        HStack(spacing: 5) {
+            Circle()
+                .fill(engine.status.color)
+                .frame(width: 7, height: 7)
             Text(engine.menuBarText)
-                .font(.system(.body, design: .monospaced).weight(.medium))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .monospacedDigit()
         }
+        .padding(.horizontal, 2)
     }
 }
+
+// MARK: - Popover
 
 struct PopoverRootView: View {
     @ObservedObject var engine: PingEngine
@@ -22,18 +27,17 @@ struct PopoverRootView: View {
     @FocusState private var hostFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            Divider()
-            statsRow
-            Divider()
-            latencyChart
-            Divider()
-            liveLog
-            Divider()
-            controls
+        VStack(spacing: 0) {
+            hero
+            Divider().opacity(0.35)
+            metrics
+            chartSection
+            historySection
+            Divider().opacity(0.35)
+            footer
         }
-        .frame(width: 420, height: 520)
+        .frame(width: 320)
+        .background(.background)
         .onAppear {
             hostField = engine.host
             if !engine.isRunning {
@@ -42,213 +46,328 @@ struct PopoverRootView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: Hero — large latency, quiet status
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Circle()
-                .fill(engine.status.color)
-                .frame(width: 10, height: 10)
-                .shadow(color: engine.status.color.opacity(0.6), radius: 4)
+    private var hero: some View {
+        VStack(spacing: 6) {
+            Text(statusTitle.uppercased())
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(engine.status.color)
+                .tracking(0.8)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Live Connection")
-                    .font(.headline)
-                HStack(spacing: 6) {
-                    Text(engine.host)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    if let ip = engine.resolvedIP {
-                        Text("→ \(ip)")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
+            Text(heroLatency)
+                .font(.system(size: 48, weight: .light, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.25), value: heroLatency)
+
+            Text(heroUnit)
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(.tertiary)
+
+            HStack(spacing: 6) {
+                Text(engine.host)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                if let ip = engine.resolvedIP {
+                    Text("·")
+                        .foregroundStyle(.quaternary)
+                    Text(ip)
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.tertiary)
                 }
             }
-
-            Spacer()
-
-            statusBadge
+            .lineLimit(1)
+            .padding(.top, 2)
         }
-        .padding(14)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 22)
+        .padding(.bottom, 18)
+        .padding(.horizontal, 20)
     }
 
-    private var statusBadge: some View {
-        Text(statusTitle)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(engine.status.color.opacity(0.15))
-            .foregroundStyle(engine.status.color)
-            .clipShape(Capsule())
+    private var heroLatency: String {
+        switch engine.status {
+        case .online(let ms), .degraded(let ms):
+            return ms < 10 ? String(format: "%.1f", ms) : String(format: "%.0f", ms)
+        case .connecting:
+            return "…"
+        case .offline, .error:
+            return "—"
+        case .idle:
+            return "—"
+        }
+    }
+
+    private var heroUnit: String {
+        switch engine.status {
+        case .online, .degraded:
+            return "milliseconds"
+        case .connecting:
+            return "connecting"
+        case .offline:
+            return "no response"
+        case .error:
+            return "error"
+        case .idle:
+            return "not running"
+        }
     }
 
     private var statusTitle: String {
         switch engine.status {
         case .idle: return "Idle"
         case .connecting: return "Connecting"
-        case .online: return "Online"
+        case .online: return "Connected"
         case .degraded: return "Degraded"
         case .offline: return "Offline"
         case .error: return "Error"
         }
     }
 
-    // MARK: - Stats
+    // MARK: Metrics — 4 quiet columns
 
-    private var statsRow: some View {
+    private var metrics: some View {
         HStack(spacing: 0) {
-            statCell(title: "Current", value: currentLatencyText)
-            statCell(title: "Avg", value: formatOptionalMs(engine.stats.averageMs))
-            statCell(title: "Min", value: formatOptionalMs(engine.stats.minMs))
-            statCell(title: "Max", value: formatOptionalMs(engine.stats.maxMs))
-            statCell(title: "Loss", value: String(format: "%.0f%%", engine.stats.lossPercent))
+            metric("Avg", formatOptionalMs(engine.stats.averageMs))
+            metricDivider
+            metric("Min", formatOptionalMs(engine.stats.minMs))
+            metricDivider
+            metric("Max", formatOptionalMs(engine.stats.maxMs))
+            metricDivider
+            metric("Loss", String(format: "%.0f%%", engine.stats.lossPercent))
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
         .padding(.horizontal, 8)
     }
 
-    private func statCell(title: String, value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(title.uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.secondary)
+    private var metricDivider: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.06))
+            .frame(width: 1, height: 28)
+    }
+
+    private func metric(_ title: String, _ value: String) -> some View {
+        VStack(spacing: 3) {
             Text(value)
-                .font(.system(.body, design: .monospaced).weight(.medium))
+                .font(.system(size: 15, weight: .medium, design: .rounded))
                 .monospacedDigit()
+                .foregroundStyle(.primary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.75)
+            Text(title)
+                .font(.system(size: 11, weight: .regular, design: .rounded))
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
     }
 
-    private var currentLatencyText: String {
-        if case .online(let ms) = engine.status { return formatMs(ms) }
-        if case .degraded(let ms) = engine.status { return formatMs(ms) }
-        if engine.isRunning { return "—" }
-        return "—"
-    }
+    // MARK: Chart — thin, soft
 
-    // MARK: - Chart
+    private var chartSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Latency")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 20)
 
-    private var latencyChart: some View {
-        Group {
-            if #available(macOS 14.0, *) {
-                Chart {
-                    ForEach(Array(engine.samples.suffix(60).enumerated()), id: \.element.id) { _, sample in
-                        if let ms = sample.latencyMs {
-                            LineMark(
-                                x: .value("Seq", sample.sequence),
-                                y: .value("ms", ms)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Color.accentColor)
-
-                            AreaMark(
-                                x: .value("Seq", sample.sequence),
-                                y: .value("ms", ms)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color.accentColor.opacity(0.25), .clear],
-                                    startPoint: .top,
-                                    endPoint: .bottom
+            Group {
+                if #available(macOS 14.0, *) {
+                    Chart {
+                        ForEach(Array(engine.samples.suffix(40)), id: \.id) { sample in
+                            if let ms = sample.latencyMs {
+                                LineMark(
+                                    x: .value("t", sample.sequence),
+                                    y: .value("ms", ms)
                                 )
-                            )
+                                .interpolationMethod(.catmullRom)
+                                .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                                .foregroundStyle(engine.status.color.opacity(0.85))
+
+                                AreaMark(
+                                    x: .value("t", sample.sequence),
+                                    y: .value("ms", ms)
+                                )
+                                .interpolationMethod(.catmullRom)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [
+                                            engine.status.color.opacity(0.18),
+                                            engine.status.color.opacity(0.0)
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    .chartXAxis(.hidden)
+                    .chartYAxis {
+                        AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                            AxisValueLabel {
+                                if let v = value.as(Double.self) {
+                                    Text("\(Int(v))")
+                                        .font(.system(size: 9, design: .rounded))
+                                        .foregroundStyle(.quaternary)
+                                }
+                            }
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                                .foregroundStyle(Color.primary.opacity(0.05))
+                        }
+                    }
+                    .chartYScale(domain: .automatic(includesZero: true))
+                    .frame(height: 72)
+                } else {
+                    sparklineFallback
+                        .frame(height: 72)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.bottom, 12)
+        .padding(.top, 4)
+    }
+
+    private var sparklineFallback: some View {
+        GeometryReader { geo in
+            let recent = Array(engine.samples.suffix(40))
+            let maxMs = max(recent.compactMap(\.latencyMs).max() ?? 1, 1)
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(recent) { sample in
+                    let h = sample.latencyMs.map { CGFloat($0 / maxMs) * geo.size.height } ?? 2
+                    Capsule()
+                        .fill(sample.isSuccess ? engine.status.color.opacity(0.45) : Color.red.opacity(0.35))
+                        .frame(
+                            width: max(2, (geo.size.width) / CGFloat(max(recent.count, 1)) - 2),
+                            height: max(2, h)
+                        )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
+    }
+
+    // MARK: History — clean list, not terminal green
+
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Recent")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Text("\(engine.stats.received)/\(engine.stats.sent)")
+                    .font(.system(size: 11, weight: .regular, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.quaternary)
+            }
+            .padding(.horizontal, 20)
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(engine.samples.suffix(30).reversed()) { sample in
+                            historyRow(sample)
+                                .id(sample.id)
                         }
                     }
                 }
-                .chartYAxisLabel("ms")
-                .chartXAxis(.hidden)
-                .frame(height: 80)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .frame(height: 140)
+                .onChange(of: engine.samples.count) { _, _ in
+                    if let first = engine.samples.suffix(30).reversed().first {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo(first.id, anchor: .top)
+                        }
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.primary.opacity(0.03))
+            )
+            .padding(.horizontal, 16)
+        }
+        .padding(.bottom, 14)
+    }
+
+    private func historyRow(_ sample: PingSample) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(sample.isSuccess ? Color.green.opacity(0.85) : Color.red.opacity(0.85))
+                .frame(width: 5, height: 5)
+
+            Text(sample.isSuccess ? (sample.resolvedIP ?? engine.host) : "Timeout")
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            if let ms = sample.latencyMs {
+                Text(String(format: "%.1f ms", ms))
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
             } else {
-                // Fallback sparkline-ish bars for older macOS
-                GeometryReader { geo in
-                    let recent = Array(engine.samples.suffix(40))
-                    let maxMs = max(recent.compactMap(\.latencyMs).max() ?? 1, 1)
-                    HStack(alignment: .bottom, spacing: 2) {
-                        ForEach(recent) { sample in
-                            let h = sample.latencyMs.map { CGFloat($0 / maxMs) * geo.size.height } ?? 2
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(sample.isSuccess ? Color.accentColor.opacity(0.8) : Color.red.opacity(0.6))
-                                .frame(width: max(2, (geo.size.width - 4) / CGFloat(max(recent.count, 1)) - 2), height: max(2, h))
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                }
-                .frame(height: 80)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                Text("—")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundStyle(.tertiary)
             }
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
     }
 
-    // MARK: - Live log (terminal style)
+    // MARK: Footer — host field + quiet actions
 
-    private var liveLog: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 2) {
-                    ForEach(engine.samples) { sample in
-                        Text(sample.displayLine)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(sample.isSuccess ? Color.primary.opacity(0.9) : Color.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .id(sample.id)
-                    }
-                }
-                .padding(10)
-            }
-            .background(Color.black.opacity(0.85))
-            .foregroundStyle(.green)
-            .onChange(of: engine.samples.count) { _, _ in
-                if let last = engine.samples.last {
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        proxy.scrollTo(last.id, anchor: .bottom)
-                    }
-                }
-            }
-        }
-        .frame(maxHeight: .infinity)
-    }
-
-    // MARK: - Controls
-
-    private var controls: some View {
-        VStack(spacing: 10) {
+    private var footer: some View {
+        VStack(spacing: 12) {
             HStack(spacing: 8) {
+                Image(systemName: "globe")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.tertiary)
+
                 TextField("Host or IP", text: $hostField)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
                     .focused($hostFocused)
                     .onSubmit { applyHostAndRestart() }
 
-                Button("Apply") {
-                    applyHostAndRestart()
-                }
-                .disabled(hostField.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-
-            HStack {
-                if engine.isRunning {
-                    Button {
-                        engine.stop()
-                    } label: {
-                        Label("Stop", systemImage: "stop.fill")
+                if hostField.trimmingCharacters(in: .whitespacesAndNewlines) != engine.host
+                    || hostFocused {
+                    Button("Set") {
+                        applyHostAndRestart()
                     }
-                    .keyboardShortcut(".", modifiers: .command)
-                } else {
-                    Button {
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(hostField.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(0.04))
+            )
+
+            HStack(spacing: 16) {
+                Button {
+                    if engine.isRunning {
+                        engine.stop()
+                    } else {
                         engine.host = hostField.trimmingCharacters(in: .whitespacesAndNewlines)
                         engine.start()
-                    } label: {
-                        Label("Start", systemImage: "play.fill")
                     }
-                    .keyboardShortcut("r", modifiers: .command)
+                } label: {
+                    Label(
+                        engine.isRunning ? "Pause" : "Start",
+                        systemImage: engine.isRunning ? "pause.fill" : "play.fill"
+                    )
                 }
+                .keyboardShortcut(engine.isRunning ? "." : "r", modifiers: .command)
 
                 Button {
                     engine.clearLog()
@@ -258,36 +377,35 @@ struct PopoverRootView: View {
 
                 Spacer()
 
-                Text("\(engine.stats.received)/\(engine.stats.sent) pkts")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-
-                Button {
+                Button("Quit") {
                     NSApplication.shared.terminate(nil)
-                } label: {
-                    Label("Quit", systemImage: "power")
                 }
                 .keyboardShortcut("q", modifiers: .command)
+                .foregroundStyle(.secondary)
             }
+            .font(.system(size: 12, weight: .medium, design: .rounded))
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .labelStyle(.titleAndIcon)
+            .controlSize(.small)
         }
-        .padding(12)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
+
+    // MARK: Helpers
 
     private func applyHostAndRestart() {
         let h = hostField.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !h.isEmpty else { return }
+        hostFocused = false
         engine.host = h
         engine.restart()
     }
 
-    private func formatMs(_ ms: Double) -> String {
-        String(format: "%.1f ms", ms)
-    }
-
     private func formatOptionalMs(_ ms: Double?) -> String {
         guard let ms else { return "—" }
-        return formatMs(ms)
+        if ms < 10 { return String(format: "%.1f", ms) }
+        return String(format: "%.0f", ms)
     }
 }
