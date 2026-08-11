@@ -1,5 +1,9 @@
 # Connection Monitor
 
+<p align="center">
+  <img src="docs/icon-256.png" width="96" alt="Connection Monitor icon" />
+</p>
+
 Native **macOS menu bar** app for continuous live connection monitoring — like `ping google.com` in Terminal, always in your menu bar.
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-blue)
@@ -8,10 +12,46 @@ Native **macOS menu bar** app for continuous live connection monitoring — like
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![GitHub Package](https://img.shields.io/badge/package-%40olishiz%2Fconnection--monitor-blue)](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor)
 
-Minimal Apple-style UI · live RTT · stats · latency chart · recent replies.
+Minimal Apple-style UI · color-coded RTT · stats · latency chart · recent replies.
 
-**Package listing:** [`@olishiz/connection-monitor`](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor) on [Packages](https://github.com/olishiz?tab=packages)  
-(Native Mac app — install with Homebrew or the DMG below, not `npm install`.)
+**Package:** [`@olishiz/connection-monitor`](https://github.com/olishiz/connection-monitor/pkgs/npm/connection-monitor) on [Packages](https://github.com/olishiz?tab=packages)  
+*(Native Mac app — install with Homebrew or the DMG, not `npm install`.)*
+
+---
+
+## Preview
+
+### Menu bar
+
+Live latency sits next to your system icons — color tells you the state at a glance:
+
+![Menu bar showing 40 ms latency](docs/screenshot-menubar.png)
+
+### Color states
+
+![Animated demo of green, orange, and red menu bar latency](docs/connection-monitor-demo.gif)
+
+| Color | Latency | Meaning |
+|-------|---------|---------|
+| 🟢 Green | &lt; 50 ms | Healthy |
+| 🟠 Orange | 50–149 ms | Degraded / slow |
+| 🔴 Red | ≥ 150 ms or offline | Bad / down |
+
+### Popover
+
+Click the menu bar item for the full panel:
+
+<p align="center">
+  <img src="docs/screenshot-popover.png" width="360" alt="Connection Monitor popover — connected at 40 ms" />
+</p>
+
+### App icon + UI
+
+<p align="center">
+  <img src="docs/screenshot-feature.png" width="720" alt="Connection Monitor app icon and popover" />
+</p>
+
+---
 
 ## Install
 
@@ -60,8 +100,6 @@ open build/Build/Products/Release/ConnectionMonitor.app
 | **Engine** | Continuous `/sbin/ping` (real ICMP) |
 | **Host** | Change anytime (`google.com`, `1.1.1.1`, …) |
 
-Status colors: **green** &lt; 50 ms · **orange** ≥ 50 ms · **red** offline.
-
 ## How it works
 
 ```
@@ -76,6 +114,8 @@ Status colors: **green** &lt; 50 ms · **orange** ≥ 50 ms · **red** offline.
 connection-monitor/
 ├── ConnectionMonitor.xcodeproj
 ├── ConnectionMonitor/          # SwiftUI sources
+├── Branding/                   # App icon master
+├── docs/                       # README screenshots & demo GIF
 ├── LICENSE
 └── README.md
 ```
