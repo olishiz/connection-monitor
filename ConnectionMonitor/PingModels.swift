@@ -43,10 +43,13 @@ enum ConnectionStatus: Equatable {
         case .connecting:
             return Color(nsColor: .systemBlue)
         case .online:
-            // Soft system green (Control Center–like)
+            // Healthy — menu bar reads green at a glance
             return Color(nsColor: .systemGreen)
-        case .degraded:
-            return Color(nsColor: .systemOrange)
+        case .degraded(let ms):
+            // Slow but up: orange mid, red when very high
+            return ms >= 150
+                ? Color(nsColor: .systemRed)
+                : Color(nsColor: .systemOrange)
         case .offline, .error:
             return Color(nsColor: .systemRed)
         }
@@ -76,11 +79,11 @@ enum ConnectionStatus: Equatable {
         }
     }
 
-    /// Green under 50ms, orange under 150ms, red otherwise / offline.
+    /// Green &lt; 50ms · orange 50–149ms · red ≥ 150ms or offline.
     static func from(latencyMs: Double?) -> ConnectionStatus {
         guard let latencyMs else { return .offline }
         if latencyMs < 50 { return .online(latencyMs: latencyMs) }
-        if latencyMs < 150 { return .degraded(latencyMs: latencyMs) }
+        // Degraded carries the ms so color can go orange → red
         return .degraded(latencyMs: latencyMs)
     }
 }

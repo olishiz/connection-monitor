@@ -55,7 +55,7 @@ open build/Build/Products/Release/ConnectionMonitor.app
 
 | | |
 |--|--|
-| **Menu bar** | Soft status dot + live RTT (e.g. `7 ms`) |
+| **Menu bar** | Color-coded latency (green / orange / red) + status dot |
 | **Popover** | Large latency, avg/min/max/loss, thin chart, recent list |
 | **Engine** | Continuous `/sbin/ping` (real ICMP) |
 | **Host** | Change anytime (`google.com`, `1.1.1.1`, …) |

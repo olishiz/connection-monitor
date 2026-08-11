@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import AppKit
 
 // MARK: - Menu bar
 
@@ -7,15 +8,54 @@ struct MenuBarLabelView: View {
     @ObservedObject var engine: PingEngine
 
     var body: some View {
-        HStack(spacing: 5) {
-            Circle()
-                .fill(engine.status.color)
-                .frame(width: 7, height: 7)
-            Text(engine.menuBarText)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .monospacedDigit()
+        // Rendered as an image so macOS menu bar keeps green / orange / red
+        // (plain Text often gets forced monochrome in MenuBarExtra).
+        Image(nsImage: MenuBarStatusImage.make(
+            text: engine.menuBarText,
+            color: NSColor(engine.status.color)
+        ))
+        .renderingMode(.original)
+        .accessibilityLabel("Connection \(engine.menuBarText)")
+    }
+}
+
+/// Tiny colored menu-bar glyph: ● 40ms
+enum MenuBarStatusImage {
+    static func make(text: String, color: NSColor) -> NSImage {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color
+        ]
+        let textSize = (text as NSString).size(withAttributes: attrs)
+        let dot: CGFloat = 6
+        let gap: CGFloat = 4
+        let padX: CGFloat = 2
+        let width = ceil(padX + dot + gap + textSize.width + padX)
+        let height = max(ceil(textSize.height), 16)
+        let size = NSSize(width: width, height: height)
+
+        let image = NSImage(size: size, flipped: false) { rect in
+            // Status dot
+            let dotRect = NSRect(
+                x: padX,
+                y: (rect.height - dot) / 2,
+                width: dot,
+                height: dot
+            )
+            color.setFill()
+            NSBezierPath(ovalIn: dotRect).fill()
+
+            // Latency text
+            let textOrigin = NSPoint(
+                x: padX + dot + gap,
+                y: (rect.height - textSize.height) / 2
+            )
+            (text as NSString).draw(at: textOrigin, withAttributes: attrs)
+            return true
         }
-        .padding(.horizontal, 2)
+        image.isTemplate = false
+        return image
     }
 }
 

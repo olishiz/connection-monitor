@@ -1,7 +1,7 @@
 {
   "name": "@olishiz/connection-monitor",
-  "version": "1.0.1",
-  "description": "Native macOS menu bar live connection monitor (ICMP ping). Install via Homebrew or Releases — this package is the GitHub Packages listing.",
+  "version": "1.1.0",
+  "description": "Native macOS menu bar live connection monitor (ICMP ping). Color-coded latency in the menu bar. Install via Homebrew or Releases.",
   "keywords": [
     "macos",
     "menu-bar",
